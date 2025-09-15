@@ -482,8 +482,24 @@ def main():
             st.warning("⚠️ 未找到關鍵欄位，顯示所有欄位前5行")
             st.dataframe(current_file.head(), use_container_width=True)
         
-        # 運行分析按鈕
-        st.header("⚙️ 分析處理")
+        # 計算類型選擇
+        st.header("⚙️ 分析設置")
+        
+        calculation_type = st.radio(
+            "選擇計算類型 (Select Calculation Type)",
+            options=[
+                ("both", "ND 和 RF 都計算 (Calculate Both)"),
+                ("nd_only", "只計算 ND 類型 (ND Only)"), 
+                ("rf_only", "只計算 RF 類型 (RF Only)")
+            ],
+            format_func=lambda x: x[1],
+            index=0,
+            help="選擇要進行分析的退貨類型"
+        )
+        
+        selected_type = calculation_type[0]  # 獲取選中的值
+        
+        st.markdown("---")
         
         if st.button("🚀 生成退貨建議", type="primary", help="點擊開始分析並生成退貨建議"):
             with st.spinner("正在處理數據..."):
@@ -491,7 +507,7 @@ def main():
                 processed_df = preprocess_data(current_file)
                 
                 # 生成退貨建議
-                recommendations_df = generate_return_recommendations(processed_df)
+                recommendations_df = generate_return_recommendations(processed_df, selected_type)
                 
                 # 顯示結果
                 st.success("✅ 分析完成！")
