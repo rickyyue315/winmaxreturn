@@ -64,22 +64,44 @@ def test_return_recommendations():
     }
     
     df = pd.DataFrame(test_data)
-    recommendations = generate_return_recommendations(df)
     
-    print(f"生成 {len(recommendations)} 條退貨建議")
+    # 測試所有類型
+    print("測試 - 所有類型 (both)")
+    recommendations_all = generate_return_recommendations(df, "both")
+    print(f"生成 {len(recommendations_all)} 條退貨建議")
     
-    if len(recommendations) > 0:
-        print("退貨建議詳情:")
-        for _, rec in recommendations.iterrows():
-            print(f"  - Article: {rec['Article']}, Site: {rec['Transfer Site']}, Qty: {rec['Transfer Qty']}, Type: {rec.get('Type', 'N/A')}")
+    # 測試只計算 ND
+    print("\n測試 - 只計算 ND 類型")
+    recommendations_nd = generate_return_recommendations(df, "nd_only")
+    print(f"生成 {len(recommendations_nd)} 條 ND 類型退貨建議")
+    
+    # 測試只計算 RF
+    print("\n測試 - 只計算 RF 類型")
+    recommendations_rf = generate_return_recommendations(df, "rf_only")
+    print(f"生成 {len(recommendations_rf)} 條 RF 類型退貨建議")
+    
+    # 驗證結果
+    nd_count_all = (recommendations_all['Type'] == 'ND').sum() if len(recommendations_all) > 0 else 0
+    rf_count_all = (recommendations_all['Type'] == 'RF').sum() if len(recommendations_all) > 0 else 0
+    
+    print(f"\n結果驗證:")
+    print(f"  所有類型: ND={nd_count_all}, RF={rf_count_all}")
+    print(f"  只 ND: {len(recommendations_nd)} 條")
+    print(f"  只 RF: {len(recommendations_rf)} 條")
     
     # 基本驗證
-    if len(recommendations) > 0:
-        assert all(recommendations['Receive Site'] == 'D001'), "接收站點應為 D001"
-        assert all(recommendations['Transfer Qty'] > 0), "轉移數量應為正數"
+    if len(recommendations_all) > 0:
+        assert all(recommendations_all['Receive Site'] == 'D001'), "接收站點應為 D001"
+        assert all(recommendations_all['Transfer Qty'] > 0), "轉移數量應為正數"
+    
+    if len(recommendations_nd) > 0:
+        assert all(recommendations_nd['Type'] == 'ND'), "ND 模式只應返回 ND 類型"
+    
+    if len(recommendations_rf) > 0:
+        assert all(recommendations_rf['Type'] == 'RF'), "RF 模式只應返回 RF 類型"
     
     print("✅ 退貨建議生成測試通過")
-    return recommendations
+    return recommendations_all
 
 def test_effective_sold_qty():
     """測試有效銷量計算"""
@@ -143,28 +165,41 @@ def test_with_real_data():
         processed_data = preprocess_data(real_data)
         print(f"預處理完成: {processed_data.shape[0]} 行")
         
-        # 生成建議
-        recommendations = generate_return_recommendations(processed_data)
-        print(f"生成退貨建議: {len(recommendations)} 條")
+        # 測試所有類型
+        print("\n測試 - 所有類型 (both)")
+        recommendations_all = generate_return_recommendations(processed_data, "both")
+        print(f"生成退貨建議: {len(recommendations_all)} 條")
         
-        if len(recommendations) > 0:
-            print("\n真實數據分析結果:")
-            print(f"  總退貨建議數: {len(recommendations)}")
-            print(f"  總退貨件數: {recommendations['Transfer Qty'].sum()}")
-            print(f"  ND 類型: {(recommendations['Type'] == 'ND').sum()}")
-            print(f"  RF 類型: {(recommendations['Type'] == 'RF').sum()}")
-            
-            # 按 OM 統計
-            om_stats = recommendations.groupby('OM')['Transfer Qty'].sum().sort_values(ascending=False)
-            print(f"\n按 OM 退貨件數分布:")
-            for om, qty in om_stats.head().items():
-                print(f"  {om}: {qty} 件")
+        # 測試只 ND
+        print("\n測試 - 只計算 ND 類型")
+        recommendations_nd = generate_return_recommendations(processed_data, "nd_only")
+        print(f"生成 ND 類型建議: {len(recommendations_nd)} 條")
         
-        # 質量檢查
-        quality_results = quality_check(recommendations, processed_data)
-        print(f"\n質量檢查結果:")
-        for result in quality_results:
-            print(f"  {result}")
+        # 測試只 RF
+        print("\n測試 - 只計算 RF 類型")
+        recommendations_rf = generate_return_recommendations(processed_data, "rf_only")
+        print(f"生成 RF 類型建議: {len(recommendations_rf)} 條")
+        
+        # 統計結果
+        if len(recommendations_all) > 0:
+            print("\n真實數據分析結果 (所有類型):")
+            print(f"  總退貨建議數: {len(recommendations_all)}")
+            print(f"  總退貨件數: {recommendations_all['Transfer Qty'].sum()}")
+            print(f"  ND 類型: {(recommendations_all['Type'] == 'ND').sum()}")
+            print(f"  RF 類型: {(recommendations_all['Type'] == 'RF').sum()}")
+        
+        print(f"\n比較結果:")
+        print(f"  所有類型: {len(recommendations_all)} 條")
+        print(f"  只 ND: {len(recommendations_nd)} 條")
+        print(f"  只 RF: {len(recommendations_rf)} 條")
+        
+        # 驗證結果的邏輯性
+        nd_count_all = (recommendations_all['Type'] == 'ND').sum() if len(recommendations_all) > 0 else 0
+        rf_count_all = (recommendations_all['Type'] == 'RF').sum() if len(recommendations_all) > 0 else 0
+        
+        assert len(recommendations_nd) == nd_count_all, f"ND 數量不一致: {len(recommendations_nd)} != {nd_count_all}"
+        assert len(recommendations_rf) == rf_count_all, f"RF 數量不一致: {len(recommendations_rf)} != {rf_count_all}"
+        assert len(recommendations_all) == len(recommendations_nd) + len(recommendations_rf), "總數不等於 ND + RF"
         
         print("✅ 真實數據測試通過")
         

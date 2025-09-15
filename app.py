@@ -108,8 +108,13 @@ def get_top20_percent_threshold(df, article):
     threshold = np.percentile(sold_quantities, 80)
     return threshold
 
-def generate_return_recommendations(df):
-    """生成退貨建議"""
+def generate_return_recommendations(df, calculation_type="both"):
+    """生成退貨建議
+    
+    Args:
+        df: 數據框架
+        calculation_type: 計算類型 ('nd_only', 'rf_only', 'both')
+    """
     recommendations = []
     
     for _, row in df.iterrows():
@@ -124,7 +129,7 @@ def generate_return_recommendations(df):
         effective_sold_qty = calculate_effective_sold_qty(row)
         
         # 優先級 1: ND 類型退倉
-        if rp_type == "ND" and net_stock > 0:
+        if rp_type == "ND" and net_stock > 0 and calculation_type in ["nd_only", "both"]:
             recommendations.append({
                 'Article': article,
                 'Product Desc': row.get('Article Description', ''),
@@ -138,7 +143,7 @@ def generate_return_recommendations(df):
             })
         
         # 優先級 2: RF 類型過剩退倉
-        elif rp_type == "RF":
+        elif rp_type == "RF" and calculation_type in ["rf_only", "both"]:
             total_available = net_stock + pending_received
             
             # 檢查條件：庫存充足
@@ -176,8 +181,14 @@ def generate_return_recommendations(df):
     
     return pd.DataFrame(recommendations)
 
-def create_excel_report(recommendations_df, df_original):
-    """創建 Excel 報告"""
+def create_excel_report(recommendations_df, df_original, calculation_type="both"):
+    """創建 Excel 報告
+    
+    Args:
+        recommendations_df: 退貨建議數據框架
+        df_original: 原始數據框架
+        calculation_type: 計算類型 ('nd_only', 'rf_only', 'both')
+    """
     # 創建工作簿
     wb = Workbook()
     
@@ -222,14 +233,23 @@ def create_excel_report(recommendations_df, df_original):
     total_recommendations = len(recommendations_df)
     total_transfer_qty = recommendations_df['Transfer Qty'].sum() if not recommendations_df.empty else 0
     
+    # 分析類型說明
+    type_descriptions = {
+        "nd_only": "ND 類型退倉分析",
+        "rf_only": "RF 類型過剩退倉分析",
+        "both": "綜合退貨分析 (ND + RF)"
+    }
+    analysis_type_desc = type_descriptions.get(calculation_type, "綜合分析")
+    
     ws2.cell(row=1, column=1, value="KPI 摘要").font = Font(size=16, bold=True)
-    ws2.cell(row=3, column=1, value="總退貨建議數量（條數）:").font = Font(bold=True)
-    ws2.cell(row=3, column=2, value=total_recommendations)
-    ws2.cell(row=4, column=1, value="總退貨件數:").font = Font(bold=True)
-    ws2.cell(row=4, column=2, value=total_transfer_qty)
+    ws2.cell(row=2, column=1, value=f"分析類型: {analysis_type_desc}").font = Font(size=12, bold=True)
+    ws2.cell(row=4, column=1, value="總退貨建議數量（條數）:").font = Font(bold=True)
+    ws2.cell(row=4, column=2, value=total_recommendations)
+    ws2.cell(row=5, column=1, value="總退貨件數:").font = Font(bold=True)
+    ws2.cell(row=5, column=2, value=total_transfer_qty)
     
     # 詳細統計表
-    current_row = 7
+    current_row = 8
     
     if not recommendations_df.empty:
         # 按 Article 統計
@@ -480,6 +500,14 @@ def main():
                 st.header("📊 分析結果")
                 
                 if not recommendations_df.empty:
+                    # 基本統計說明
+                    type_description = {
+                        "nd_only": "ND 類型退倉",
+                        "rf_only": "RF 類型過剩退倉",
+                        "both": "綜合退貨分析"
+                    }
+                    st.markdown(f"**分析類型**: {type_description[selected_type]}")
+                    
                     col1, col2, col3, col4 = st.columns(4)
                     
                     with col1:
@@ -539,7 +567,7 @@ def main():
                     st.header("💾 下載報告")
                     
                     # 創建 Excel 文件
-                    wb = create_excel_report(recommendations_df, processed_df)
+                    wb = create_excel_report(recommendations_df, processed_df, selected_type)
                     
                     # 生成文件名
                     current_date = datetime.now().strftime("%Y%m%d")
