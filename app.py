@@ -423,34 +423,17 @@ def main():
     # 文件上傳
     st.header("📤 數據上傳")
     
-    # 檢查是否有默認文件
-    default_file_path = "/workspace/user_input_files/ELE_15Sep2025.XLSX"
+    uploaded_file = st.file_uploader(
+        "選擇 Excel 文件",
+        type=['xlsx'],
+        help="支持 .xlsx 格式的 Excel 文件"
+    )
     
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        uploaded_file = st.file_uploader(
-            "選擇 Excel 文件",
-            type=['xlsx'],
-            help="支持 .xlsx 格式的 Excel 文件"
-        )
-    
-    with col2:
-        use_default = st.button("使用默認文件", help="使用系統預設的 ELE_15Sep2025.XLSX 文件")
-    
-    # 確定使用的文件
+    # 處理上傳的文件
     current_file = None
     file_source = ""
     
-    if use_default:
-        try:
-            current_file = pd.read_excel(default_file_path, dtype={'Article': str})
-            file_source = "默認文件 (ELE_15Sep2025.XLSX)"
-            st.success(f"✅ 已載入默認文件: ELE_15Sep2025.XLSX")
-        except Exception as e:
-            st.error(f"❌ 無法載入默認文件: {str(e)}")
-    
-    elif uploaded_file is not None:
+    if uploaded_file is not None:
         try:
             current_file = pd.read_excel(uploaded_file, dtype={'Article': str})
             file_source = f"上傳文件 ({uploaded_file.name})"
