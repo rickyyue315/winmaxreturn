@@ -632,6 +632,17 @@ def main():
             - Last Month Sold Qty (上月銷量)
             - MTD Sold Qty (本月至今銷量)
             """)
+    
+    # 底部水印
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center; color: #888; font-size: 14px; margin-top: 30px;'>
+            由 Ricky 開發 | © 2025
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     main()
