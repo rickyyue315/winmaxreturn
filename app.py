@@ -413,6 +413,42 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         current_row += 2
         
+        # 所有店鋪總計數據
+        ws2.cell(row=current_row, column=1, value="所有店鋪總計").font = Font(size=14, bold=True)
+        current_row += 2
+        
+        ws2.cell(row=current_row, column=1, value="原有存貨").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_original_stock)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="上月銷售").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_last_month_sold)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="MTD銷售").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_mtd_sold)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="Safety QTY").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_safety_stock)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="退貨總數量").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_return_qty)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="退貨後存貨").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value=total_remaining_stock)
+        current_row += 1
+        
+        current_row += 2
+        
         # 退貨類型說明
         ws2.cell(row=current_row, column=1, value="退貨類型說明").font = Font(size=14, bold=True)
         current_row += 2
