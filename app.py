@@ -368,6 +368,14 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         current_row += 2
         
+        # 計算所有店鋪總計數據
+        total_original_stock = df_original['SaSa Net Stock'].sum()
+        total_last_month_sold = df_original['Last Month Sold Qty'].sum()
+        total_mtd_sold = df_original['MTD Sold Qty'].sum()
+        total_safety_stock = df_original['Safety Stock'].sum()
+        total_return_qty = recommendations_df['Return Qty'].sum()
+        total_remaining_stock = total_original_stock - total_return_qty
+        
         # 退貨前合計統計（按 Article 及 Product Desc 分類）
         ws2.cell(row=current_row, column=1, value="退貨前合計統計（按 Article 及 Product Desc 分類）").font = Font(size=14, bold=True)
         current_row += 2
@@ -410,16 +418,6 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
             ws2.cell(row=current_row, column=7, value=row['Return Qty'])
             ws2.cell(row=current_row, column=8, value=row['Remaining Stock After Return'])
             current_row += 1
-        
-        current_row += 2
-        
-        # 所有店鋪總計數據
-        ws2.cell(row=current_row, column=1, value="所有店鋪總計").font = Font(size=14, bold=True)
-        current_row += 2
-        
-        ws2.cell(row=current_row, column=1, value="原有存貨").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_original_stock)
         current_row += 1
         
         ws2.cell(row=current_row, column=1, value="上月銷售").font = header_font
