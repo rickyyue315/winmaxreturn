@@ -368,31 +368,48 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         current_row += 2
         
-        # 退貨前合計統計
-        ws2.cell(row=current_row, column=1, value="退貨前合計統計").font = Font(size=14, bold=True)
+        # 退貨前合計統計（按 Article & Product Desc）
+        ws2.cell(row=current_row, column=1, value="退貨前合計統計（按 Article & Product Desc）").font = Font(size=14, bold=True)
         current_row += 2
         
         ws2.cell(row=current_row, column=1, value="Article").font = header_font
         ws2.cell(row=current_row, column=1).fill = header_fill
         ws2.cell(row=current_row, column=2, value="Product Desc").font = header_font
         ws2.cell(row=current_row, column=2).fill = header_fill
-        ws2.cell(row=current_row, column=3, value="總退貨件數").font = header_font
+        ws2.cell(row=current_row, column=3, value="原有存貨").font = header_font
         ws2.cell(row=current_row, column=3).fill = header_fill
+        ws2.cell(row=current_row, column=4, value="上月銷售").font = header_font
+        ws2.cell(row=current_row, column=4).fill = header_fill
+        ws2.cell(row=current_row, column=5, value="MTD銷售").font = header_font
+        ws2.cell(row=current_row, column=5).fill = header_fill
+        ws2.cell(row=current_row, column=6, value="Safety QTY").font = header_font
+        ws2.cell(row=current_row, column=6).fill = header_fill
+        ws2.cell(row=current_row, column=7, value="退貨總數量").font = header_font
+        ws2.cell(row=current_row, column=7).fill = header_fill
+        ws2.cell(row=current_row, column=8, value="退貨後存貨").font = header_font
+        ws2.cell(row=current_row, column=8).fill = header_fill
         current_row += 1
         
-        # 按 Article 分類統計
-        article_return_stats = recommendations_df.groupby('Article').agg({
+        # 按 Article & Product Desc 分組統計
+        article_summary = recommendations_df.groupby(['Article', 'Product Desc']).agg({
+            'Stock Qty': 'first',
+            'Last Month Sold Qty': 'first',
+            'MTD Sold Qty': 'first',
+            'Safety Qty': 'first',
             'Return Qty': 'sum',
-            'Product Desc': 'first'
+            'Remaining Stock After Return': 'first'
         }).reset_index()
         
-        for _, row in article_return_stats.iterrows():
+        for _, row in article_summary.iterrows():
             ws2.cell(row=current_row, column=1, value=row['Article'])
             ws2.cell(row=current_row, column=2, value=row['Product Desc'])
-            ws2.cell(row=current_row, column=3, value=row['Return Qty'])
+            ws2.cell(row=current_row, column=3, value=row['Stock Qty'])
+            ws2.cell(row=current_row, column=4, value=row['Last Month Sold Qty'])
+            ws2.cell(row=current_row, column=5, value=row['MTD Sold Qty'])
+            ws2.cell(row=current_row, column=6, value=row['Safety Qty'])
+            ws2.cell(row=current_row, column=7, value=row['Return Qty'])
+            ws2.cell(row=current_row, column=8, value=row['Remaining Stock After Return'])
             current_row += 1
-        
-        current_row += 2
         
         current_row += 2
         
@@ -417,8 +434,8 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
             current_row += 1
     
     # 調整列寬
-    for col in ['A', 'B', 'C']:
-        ws2.column_dimensions[col].width = 20
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+        ws2.column_dimensions[col].width = 15
     
     return wb
 
