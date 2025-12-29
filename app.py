@@ -390,8 +390,8 @@ def quality_check(recommendations_df, original_df):
     # 檢查 1: Article 和 OM 一致性
     for _, row in recommendations_df.iterrows():
         original_row = original_df[
-            (original_df['Article'] == row['Article']) & 
-            (original_df['Site'] == row['Transfer Site'])
+            (original_df['Article'] == row['Article']) &
+            (original_df['Site'] == row['Return Site'])
         ]
         if not original_row.empty and original_row.iloc[0]['OM'] == row['OM']:
             continue
