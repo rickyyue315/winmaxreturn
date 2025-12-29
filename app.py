@@ -127,7 +127,7 @@ def generate_return_recommendations(df, calculation_type="both"):
         safety_stock = row['Safety Stock']
         last_month_sold = row.get('Last Month Sold Qty', 0)
         mtd_sold = row.get('MTD Sold Qty', 0)
-        brand_code = row.get('Brand Code', '')
+        product_hierarchy = row.get('Product Hierarchy', '')
         
         effective_sold_qty = calculate_effective_sold_qty(row)
         
@@ -148,7 +148,7 @@ def generate_return_recommendations(df, calculation_type="both"):
             recommendations.append({
                 'Article': article,
                 'Product Desc': row.get('Article Description', ''),
-                'Brand Code': brand_code,
+                'Product Hierarchy': product_hierarchy,
                 'OM': om,
                 'Return Site': site,
                 'Receive Site': 'D001',
@@ -174,9 +174,13 @@ def generate_return_recommendations(df, calculation_type="both"):
                 
                 if effective_sold_qty < top20_threshold:
                     # 根據銷售量調整退貨後淨餘數量要求
-                    if effective_sold_qty > safety_stock:
-                        # 銷售量高於 Safety Qty：退貨後淨餘數量需要高於 Safety Qty 25%
-                        min_remaining = max(int(safety_stock * 1.25), 0)
+                    # 若上月銷售量/MTD銷售量 其中一個月 > Safety Qty：退貨後淨餘數量需高於 Safety Qty 的 25% / +2件
+                    # 若上月銷售量/MTD銷售量 同樣地 ≤ Safety Qty：退貨後淨餘數量只需高於 Safety Qty 1 件
+                    if last_month_sold > safety_stock or mtd_sold > safety_stock:
+                        # 銷售量高於 Safety Qty：退貨後淨餘數量需高於 Safety Qty 的 25% 且至少 +2 件
+                        min_remaining_25_percent = int(safety_stock * 1.25)
+                        min_remaining_2_more = safety_stock + 2
+                        min_remaining = max(min_remaining_25_percent, min_remaining_2_more, 0)
                     else:
                         # 銷售量少於 Safety Qty：退貨後淨餘數量只需要高於 Safety Qty 1 件
                         min_remaining = max(safety_stock + 1, 0)
@@ -198,7 +202,7 @@ def generate_return_recommendations(df, calculation_type="both"):
                         recommendations.append({
                             'Article': article,
                             'Product Desc': row.get('Article Description', ''),
-                            'Brand Code': brand_code,
+                            'Product Hierarchy': product_hierarchy,
                             'OM': om,
                             'Return Site': site,
                             'Receive Site': 'D001',
@@ -241,7 +245,7 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
     ws1.title = "退貨建議"
     
     # 寫入標題行
-    headers = ['Brand Code', 'Article', 'Product Desc', 'OM', 'Return Site', 'Receive Site', 'Return Qty',
+    headers = ['Product Hierarchy', 'Article', 'Product Desc', 'OM', 'Return Site', 'Receive Site', 'Return Qty',
                'RP Type', 'Stock Qty', 'Safety Qty', 'Last Month Sold Qty', 'MTD Sold Qty',
                'Remaining Stock After Return', 'Notes']
     for col_num, header in enumerate(headers, 1):
@@ -685,7 +689,7 @@ def main():
                     
                     # 顯示退貨建議表
                     st.markdown('<div class="section-header">🔄 退貨建議表</div>', unsafe_allow_html=True)
-                    display_columns = ['Brand Code', 'Article', 'Product Desc', 'OM', 'Return Site', 'Receive Site', 'Return Qty',
+                    display_columns = ['Product Hierarchy', 'Article', 'Product Desc', 'OM', 'Return Site', 'Receive Site', 'Return Qty',
                                        'RP Type', 'Stock Qty', 'Safety Qty', 'Last Month Sold Qty', 'MTD Sold Qty',
                                        'Remaining Stock After Return', 'Notes']
                     st.dataframe(recommendations_df[display_columns], use_container_width=True)
@@ -809,8 +813,8 @@ def main():
             - 銷量保護：不屬於該商品的前 20% 高銷量店鋪（避免影響熱銷店鋪）
             - 退貨數量計算：
               - 潛在退貨量 = 總可用庫存 - Safety Qty
-              - **若銷售量 > Safety Qty**：退貨後淨餘數量需高於 Safety Qty 的 25%
-              - **若銷售量 ≤ Safety Qty**：退貨後淨餘數量只需高於 Safety Qty 1 件
+              - **若上月銷售量/MTD銷售量 其中一個月 > Safety Qty**：退貨後淨餘數量需高於 Safety Qty 的 25% 且至少 +2 件
+              - **若上月銷售量/MTD銷售量 同樣地 ≤ Safety Qty**：退貨後淨餘數量只需高於 Safety Qty 1 件
               - 最終退貨量 = min(潛在退貨量, 總可用庫存 - 最小保留量)
             - 退貨限制：最少退貨 2 件，且不超過現有庫存
             - 目的：優化庫存結構，將過剩庫存退回 D001 倉庫
@@ -819,7 +823,7 @@ def main():
         with st.expander("📋 必需欄位"):
             st.markdown("""
             **Excel 文件必須包含以下欄位：**
-            - Brand Code (品牌編號)
+            - Product Hierarchy (產品層級)
             - Article (產品編號)
             - Article Description (產品描述)
             - OM (營運管理單位)
