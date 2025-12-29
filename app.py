@@ -368,11 +368,47 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         current_row += 2
         
-        # 優先級分布
-        ws2.cell(row=current_row, column=1, value="優先級分布").font = Font(size=14, bold=True)
+        # 退貨前合計統計
+        ws2.cell(row=current_row, column=1, value="退貨前合計統計").font = Font(size=14, bold=True)
         current_row += 2
         
-        # 移除優先級統計，改為退貨類型統計
+        ws2.cell(row=current_row, column=1, value="項目").font = header_font
+        ws2.cell(row=current_row, column=1).fill = header_fill
+        ws2.cell(row=current_row, column=2, value="合計").font = header_font
+        ws2.cell(row=current_row, column=2).fill = header_fill
+        current_row += 1
+        
+        # 計算合計數據
+        total_original_stock = df_original['SaSa Net Stock'].sum()
+        total_last_month_sold = df_original['Last Month Sold Qty'].sum()
+        total_mtd_sold = df_original['MTD Sold Qty'].sum()
+        total_safety_stock = df_original['Safety Stock'].sum()
+        total_return_qty = recommendations_df['Return Qty'].sum()
+        total_remaining_stock = total_original_stock - total_return_qty
+        
+        ws2.cell(row=current_row, column=1, value="原有存貨")
+        ws2.cell(row=current_row, column=2, value=total_original_stock)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="上月銷售")
+        ws2.cell(row=current_row, column=2, value=total_last_month_sold)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="MTD銷售")
+        ws2.cell(row=current_row, column=2, value=total_mtd_sold)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="Safety QTY")
+        ws2.cell(row=current_row, column=2, value=total_safety_stock)
+        current_row += 1
+        
+        ws2.cell(row=current_row, column=1, value="退貨後存貨")
+        ws2.cell(row=current_row, column=2, value=total_remaining_stock)
+        current_row += 1
+        
+        current_row += 2
+        
+        # 退貨類型說明
         ws2.cell(row=current_row, column=1, value="退貨類型說明").font = Font(size=14, bold=True)
         current_row += 2
         
@@ -383,8 +419,8 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         current_row += 1
         
         type_explanations = [
-            ['ND', 'ND類型退倉：退回全部現有庫存至D001倉庫'],
-            ['RF', 'RF類型過剩退倉：退回過剩庫存（庫存充足且非高銷量店鋪）']
+            ['ND', 'ND類型退倉：退回全部現有庫存至D001倉庫。如有銷售記錄，系統會提示 Buyer 需要留意是否需轉成 RF 及設定 Safety Stock'],
+            ['RF', 'RF類型過剩退倉：退回過剩庫存（庫存充足且非高銷量店鋪）。若上月銷售量/MTD銷售量 其中一個月 > Safety Qty，退貨後淨餘數量需高於 Safety Qty 的 25% 且至少 +2 件；若上月銷售量/MTD銷售量 同樣地 ≤ Safety Qty，退貨後淨餘數量只需高於 Safety Qty 1 件']
         ]
         
         for explanation in type_explanations:
