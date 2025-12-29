@@ -368,47 +368,48 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         current_row += 2
         
-        # 退貨前合計統計（所有店鋪的合計）
-        ws2.cell(row=current_row, column=1, value="退貨前合計統計（所有店鋪的合計）").font = Font(size=14, bold=True)
+        # 退貨前合計統計（按 Article 及 Product Desc 分類）
+        ws2.cell(row=current_row, column=1, value="退貨前合計統計（按 Article 及 Product Desc 分類）").font = Font(size=14, bold=True)
         current_row += 2
         
-        # 計算所有店鋪的合計數據
-        total_original_stock = df_original['SaSa Net Stock'].sum()
-        total_last_month_sold = df_original['Last Month Sold Qty'].sum()
-        total_mtd_sold = df_original['MTD Sold Qty'].sum()
-        total_safety_stock = df_original['Safety Stock'].sum()
-        total_return_qty = recommendations_df['Return Qty'].sum()
-        total_remaining_stock = total_original_stock - total_return_qty
-        
-        ws2.cell(row=current_row, column=1, value="原有存貨").font = header_font
+        ws2.cell(row=current_row, column=1, value="Article").font = header_font
         ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_original_stock)
+        ws2.cell(row=current_row, column=2, value="Product Desc").font = header_font
+        ws2.cell(row=current_row, column=2).fill = header_fill
+        ws2.cell(row=current_row, column=3, value="原有存貨").font = header_font
+        ws2.cell(row=current_row, column=3).fill = header_fill
+        ws2.cell(row=current_row, column=4, value="上月銷售").font = header_font
+        ws2.cell(row=current_row, column=4).fill = header_fill
+        ws2.cell(row=current_row, column=5, value="MTD銷售").font = header_font
+        ws2.cell(row=current_row, column=5).fill = header_fill
+        ws2.cell(row=current_row, column=6, value="Safety QTY").font = header_font
+        ws2.cell(row=current_row, column=6).fill = header_fill
+        ws2.cell(row=current_row, column=7, value="退貨總數量").font = header_font
+        ws2.cell(row=current_row, column=7).fill = header_fill
+        ws2.cell(row=current_row, column=8, value="退貨後存貨").font = header_font
+        ws2.cell(row=current_row, column=8).fill = header_fill
         current_row += 1
         
-        ws2.cell(row=current_row, column=1, value="上月銷售").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_last_month_sold)
-        current_row += 1
+        # 按 Article 及 Product Desc 分組統計
+        article_summary = recommendations_df.groupby(['Article', 'Product Desc']).agg({
+            'Stock Qty': 'first',
+            'Last Month Sold Qty': 'first',
+            'MTD Sold Qty': 'first',
+            'Safety Qty': 'first',
+            'Return Qty': 'sum',
+            'Remaining Stock After Return': 'first'
+        }).reset_index()
         
-        ws2.cell(row=current_row, column=1, value="MTD銷售").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_mtd_sold)
-        current_row += 1
-        
-        ws2.cell(row=current_row, column=1, value="Safety QTY").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_safety_stock)
-        current_row += 1
-        
-        ws2.cell(row=current_row, column=1, value="退貨總數量").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_return_qty)
-        current_row += 1
-        
-        ws2.cell(row=current_row, column=1, value="退貨後存貨").font = header_font
-        ws2.cell(row=current_row, column=1).fill = header_fill
-        ws2.cell(row=current_row, column=2, value=total_remaining_stock)
-        current_row += 1
+        for _, row in article_summary.iterrows():
+            ws2.cell(row=current_row, column=1, value=row['Article'])
+            ws2.cell(row=current_row, column=2, value=row['Product Desc'])
+            ws2.cell(row=current_row, column=3, value=row['Stock Qty'])
+            ws2.cell(row=current_row, column=4, value=row['Last Month Sold Qty'])
+            ws2.cell(row=current_row, column=5, value=row['MTD Sold Qty'])
+            ws2.cell(row=current_row, column=6, value=row['Safety Qty'])
+            ws2.cell(row=current_row, column=7, value=row['Return Qty'])
+            ws2.cell(row=current_row, column=8, value=row['Remaining Stock After Return'])
+            current_row += 1
         
         current_row += 2
         
