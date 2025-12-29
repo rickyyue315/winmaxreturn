@@ -390,15 +390,37 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         ws2.cell(row=current_row, column=8).fill = header_fill
         current_row += 1
         
-        # 按 Article 及 Product Desc 分組統計
-        article_summary = recommendations_df.groupby(['Article', 'Product Desc']).agg({
-            'Stock Qty': 'first',
-            'Last Month Sold Qty': 'first',
-            'MTD Sold Qty': 'first',
-            'Safety Qty': 'first',
-            'Return Qty': 'sum',
-            'Remaining Stock After Return': 'first'
+        # 按 Article 及 Product Desc 分組統計 (從原始數據獲取所有 Site 的總計)
+        # 首先從原始數據計算每個 Article 的總計
+        original_article_stats = df_original.groupby(['Article', 'Article Description']).agg({
+            'SaSa Net Stock': 'sum',
+            'Last Month Sold Qty': 'sum',
+            'MTD Sold Qty': 'sum',
+            'Safety Stock': 'sum'
         }).reset_index()
+        
+        # 從建議數據計算每個 Article 的退貨總量
+        return_article_stats = recommendations_df.groupby('Article').agg({
+            'Return Qty': 'sum'
+        }).reset_index()
+        
+        # 合併數據
+        article_summary = pd.merge(
+            original_article_stats,
+            return_article_stats,
+            on='Article',
+            how='inner' # 只顯示有退貨建議的 Article
+        )
+        
+        # 計算退貨後存貨
+        article_summary['Remaining Stock After Return'] = article_summary['SaSa Net Stock'] - article_summary['Return Qty']
+        
+        # 重新命名欄位以匹配 Excel 標題
+        article_summary = article_summary.rename(columns={
+            'Article Description': 'Product Desc',
+            'SaSa Net Stock': 'Stock Qty',
+            'Safety Stock': 'Safety Qty'
+        })
         
         for _, row in article_summary.iterrows():
             ws2.cell(row=current_row, column=1, value=row['Article'])
