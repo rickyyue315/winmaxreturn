@@ -132,7 +132,7 @@ def generate_return_recommendations(df, calculation_type="both"):
         effective_sold_qty = calculate_effective_sold_qty(row)
         
         # ND 類型退倉
-        if rp_type == "ND" and net_stock > 0 and calculation_type in ["nd_only", "both"]:
+        if rp_type == "ND" and net_stock > 0 and calculation_type in ["nd_only", "nd_shop_only", "both"]:
             return_qty = net_stock
             remaining_stock = net_stock - return_qty
             
@@ -276,6 +276,7 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
     # 分析類型說明
     type_descriptions = {
         "nd_only": "ND 類型退倉分析",
+        "nd_shop_only": "只退 ND 店舖(全退)分析",
         "rf_only": "RF 類型過剩退倉分析",
         "both": "綜合退貨分析 (ND + RF)"
     }
@@ -491,6 +492,7 @@ def create_excel_report(recommendations_df, df_original, calculation_type="both"
         
         type_explanations = [
             ['ND', 'ND類型退倉：退回全部現有庫存至D001倉庫。如有銷售記錄，系統會提示 Buyer 需要留意是否需轉成 RF 及設定 Safety Stock'],
+            ['ND_SHOP', '只退 ND 店舖(全退)：專門分析只有 ND 類型的店舖，將所有現有庫存退回至 D001 倉庫'],
             ['RF', 'RF類型過剩退倉：退回過剩庫存（庫存充足且非高銷量店鋪）。若上月銷售量/MTD銷售量 其中一個月 > Safety Qty，退貨後淨餘數量需高於 Safety Qty 的 25% 且至少 +2 件；若上月銷售量/MTD銷售量 同樣地 ≤ Safety Qty，退貨後淨餘數量只需高於 Safety Qty 1 件']
         ]
         
@@ -718,6 +720,7 @@ def main():
             options=[
                 ("both", "ND 和 RF 都計算"),
                 ("nd_only", "只計算 ND 類型"),
+                ("nd_shop_only", "只退 ND 店舖(全退)"),
                 ("rf_only", "只計算 RF 類型")
             ],
             format_func=lambda x: x[1],
@@ -752,6 +755,7 @@ def main():
                     # 基本統計說明
                     type_description = {
                         "nd_only": "ND 類型退倉",
+                        "nd_shop_only": "只退 ND 店舖(全退)",
                         "rf_only": "RF 類型過剩退倉",
                         "both": "綜合退貨分析"
                     }
